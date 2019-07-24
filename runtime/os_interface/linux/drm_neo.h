@@ -34,6 +34,7 @@ struct GT_SYSTEM_INFO;
 
 namespace OCLRT {
 #define I915_CONTEXT_PRIVATE_PARAM_BOOST 0x80000000
+#define I915_PRIVATE_PARAM_HAS_SSEU 0x8000
 
 class DeviceFactory;
 struct HardwareInfo;
@@ -44,6 +45,22 @@ struct DeviceDescriptor {
     void (*setupGtSystemInfo)(GT_SYSTEM_INFO *);
     GTTYPE eGtType;
 };
+
+#if defined(I915_PRIVATE_PARAM_HAS_SSEU)
+#define I915_CONTEXT_PRIVATE_PARAM_SSEU 0x6
+struct drm_i915_gem_context_param_sseu {
+     uint64_t flags;
+     union {
+        struct {
+             uint8_t slice_mask;
+             uint8_t subslice_mask;
+             uint8_t min_eu_per_subslice;
+             uint8_t max_eu_per_subslice;
+        } packed;
+        uint64_t value;
+    };
+};
+#endif
 
 extern const DeviceDescriptor deviceDescriptorTable[];
 
@@ -79,6 +96,12 @@ class Drm {
     MOCKABLE_VIRTUAL int getErrno();
     void setSimplifiedMocsTableUsage(bool value);
     bool getSimplifiedMocsTableUsage() const;
+#if defined(I915_PRIVATE_PARAM_HAS_SSEU)
+    int getSliceMask(uint32_t sliceCount);
+    int getContextParamSseu(struct drm_i915_gem_context_param_sseu *sseu);
+    int setContextParamSseu(struct drm_i915_gem_context_param_sseu *sseu);
+#endif
+    int setSliceCount(uint32_t sliceCount);
 
   protected:
     bool useSimplifiedMocsTable = false;
