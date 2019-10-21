@@ -561,6 +561,7 @@ CompletionStamp CommandQueueHw<GfxFamily>::enqueueNonBlocked(
     dispatchFlags.mediaSamplerRequired = mediaSamplerRequired;
     dispatchFlags.requiresCoherency = requiresCoherency;
     dispatchFlags.lowPriority = priority == QueuePriority::LOW;
+    dispatchFlags.throttle = throttle;
     dispatchFlags.implicitFlush = implicitFlush;
     dispatchFlags.flushStampReference = this->flushStamp->getStampReference();
     dispatchFlags.preemptionMode = PreemptionHelper::taskPreemptionMode(*device, multiDispatchInfo);

@@ -68,7 +68,30 @@ FlushStamp DrmCommandStreamReceiver<GfxFamily>::flush(BatchBuffer &batchBuffer, 
     BufferObject *bb = alloc->getBO();
     FlushStamp flushStamp = 0;
 
+    GT_SYSTEM_INFO *pSysInfo = const_cast<GT_SYSTEM_INFO *>(hwInfo.pSysInfo);
+    int RequestSliceCount = pSysInfo->MaxSlicesSupported;
+    switch (batchBuffer.throttle) {
+      case QueueThrottle::LOW:
+        RequestSliceCount = pSysInfo->MaxSlicesSupported;
+        break;
+      case QueueThrottle::MEDIUM:
+        if (pSysInfo->MaxSlicesSupported > 1)
+        {
+            RequestSliceCount = pSysInfo->MaxSlicesSupported-1;
+        }
+        else
+        {
+            RequestSliceCount = 1;
+        }
+        break;
+      case QueueThrottle::HIGH:
+        RequestSliceCount = 1;
+        break;
+    }
     if (bb) {
+        // update slice count.
+        this->drm->setSliceCount(RequestSliceCount);
+
         flushStamp = bb->peekHandle();
         this->processResidency(allocationsForResidency);
         // Residency hold all allocation except command buffer, hence + 1

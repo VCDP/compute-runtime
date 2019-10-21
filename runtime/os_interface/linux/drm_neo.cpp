@@ -231,4 +231,54 @@ void Drm::setSimplifiedMocsTableUsage(bool value) {
     useSimplifiedMocsTable = value;
 }
 
+#if defined(I915_PRIVATE_PARAM_HAS_SSEU)
+int Drm::getSliceMask(uint32_t sliceCount) {
+
+    uint32_t sliceMask = (1<<sliceCount)-1;
+
+    return sliceMask;
+}
+
+int Drm::getContextParamSseu(struct drm_i915_gem_context_param_sseu *sseu) {
+    struct drm_i915_gem_context_param gcp = {};
+    gcp.param = I915_CONTEXT_PRIVATE_PARAM_SSEU;
+    gcp.value = (uint64_t) sseu;
+
+    return ioctl(DRM_IOCTL_I915_GEM_CONTEXT_GETPARAM, &gcp);
+}
+
+int Drm::setContextParamSseu(struct drm_i915_gem_context_param_sseu *sseu) {
+    struct drm_i915_gem_context_param gcp = {};
+    gcp.param = I915_CONTEXT_PRIVATE_PARAM_SSEU;
+    gcp.value = (uint64_t) sseu;
+
+    return ioctl(DRM_IOCTL_I915_GEM_CONTEXT_SETPARAM, &gcp);
+}
+#endif
+
+int Drm::setSliceCount(uint32_t sliceCount) {
+#if defined(I915_PRIVATE_PARAM_HAS_SSEU)
+    int ret;
+    uint32_t sliceMask;
+    struct drm_i915_gem_context_param_sseu sseu = { .flags = I915_EXEC_RENDER };
+
+    sliceMask = getSliceMask(sliceCount);
+    ret = getContextParamSseu(&sseu);
+    if (ret) 
+    {
+        return ret;
+    }
+
+    if (sliceMask != sseu.packed.slice_mask)
+    {
+        sseu.packed.slice_mask = sliceMask;
+        ret = setContextParamSseu(&sseu);
+        if (ret)
+        {
+            return ret;
+        }
+    }
+#endif
+    return 0;
+}
 } // namespace OCLRT
